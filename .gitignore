@@ -1,0 +1,77 @@
+# Local Pi runtime state
+.atl/
+# =========================
+# Go
+# =========================
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binaries / coverage
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Build output
+/bin/
+/build/
+/dist/
+
+
+# =========================
+# Environment
+# =========================
+
+.env
+.env.*
+!.env.example
+
+
+# =========================
+# IDE / Editor
+# =========================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*~
+
+
+# =========================
+# OS
+# =========================
+
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# Logs / temporary files
+# =========================
+
+*.log
+logs/
+tmp/
+temp/
+
+
+# =========================
+# Go workspace
+# =========================
+
+go.work
+go.work.sum
+
+
+# =========================
+# Local tooling
+# =========================
+
+.gocache/

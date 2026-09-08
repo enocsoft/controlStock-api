@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: comercios-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-comercios}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-comercios}
+      POSTGRES_DB: ${DB_NAME:-comercios}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-comercios} -d ${DB_NAME:-comercios}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.17.1
+    container_name: comercios-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    entrypoint:
+      [
+        "migrate",
+        "-path", "/migrations",
+        "-database", "postgres://${DB_USER:-comercios}:${DB_PASSWORD:-comercios}@db:5432/${DB_NAME:-comercios}?sslmode=disable",
+        "up",
+      ]
+
+  api:
+    build: .
+    container_name: comercios-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: 8080
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-comercios}
+      DB_PASSWORD: ${DB_PASSWORD:-comercios}
+      DB_NAME: ${DB_NAME:-comercios}
+      JWT_SECRET: ${JWT_SECRET:-cambiar-en-produccion}
+    ports:
+      - "8080:8080"
+
+volumes:
+  db_data:
