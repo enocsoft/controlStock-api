@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module';
+import { CajaModule } from './caja/caja.module';
 import { ClientesModule } from './clientes/cliente.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProductosModule } from './productos/producto.module';
 import { ProveedoresModule } from './proveedores/proveedor.module';
 import { UsuariosModule } from './usuarios/usuario.module';
+import { VentasModule } from './ventas/venta.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { UsuariosModule } from './usuarios/usuario.module';
     UsuariosModule,
     ClientesModule,
     ProveedoresModule,
+    VentasModule,
+    CajaModule,
   ],
 })
 export class AppModule {}
