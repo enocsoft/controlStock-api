@@ -18,7 +18,7 @@ export class ProductoController {
   }
 
   @Get()
-  listar(): Promise<ProductoResponse[]> {
+  listar(): Promise<ProductoResponse[] | null> {
     return this.productoService.listar();
   }
 

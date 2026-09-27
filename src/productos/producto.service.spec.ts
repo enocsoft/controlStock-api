@@ -1,5 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductoService } from './producto.service';
@@ -31,6 +32,7 @@ describe('ProductoService', () => {
         findMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
     };
 
@@ -81,6 +83,19 @@ describe('ProductoService', () => {
     });
   });
 
+  it('crear rechaza SKU duplicado con 400 (el Go devolvía el constraint como 400)', async () => {
+    prisma.producto.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('duplicado', {
+        code: 'P2002',
+        clientVersion: '7.10.0',
+      }),
+    );
+
+    await expect(
+      service.crear({ sku: 'SKU-1', nombre: 'Dup', precio_costo: 1, precio_venta: 2 }),
+    ).rejects.toThrow(new BadRequestException('el SKU ya está en uso'));
+  });
+
   it('obtenerPorId lanza 404 con el mensaje del Go si no existe', async () => {
     prisma.producto.findUnique.mockResolvedValue(null);
 
@@ -113,19 +128,15 @@ describe('ProductoService', () => {
     expect(result.Activo).toBe(false);
   });
 
-  it('eliminar hace borrado lógico (activo=false) y 404 si no existe', async () => {
-    prisma.producto.findUnique.mockResolvedValue(fila());
-
+  it('eliminar es borrado lógico ciego (204 siempre, incluso id inexistente)', async () => {
     await service.eliminar('p1');
 
-    expect(prisma.producto.update).toHaveBeenCalledWith({
+    expect(prisma.producto.updateMany).toHaveBeenCalledWith({
       where: { id: 'p1' },
       data: { activo: false },
     });
 
-    prisma.producto.findUnique.mockResolvedValue(null);
-    await expect(service.eliminar('p-x')).rejects.toThrow(
-      new NotFoundException('producto no encontrado'),
-    );
+    prisma.producto.updateMany.mockResolvedValue({ count: 0 });
+    await expect(service.eliminar('p-x')).resolves.toBeUndefined();
   });
 });
