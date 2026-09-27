@@ -138,7 +138,7 @@ describe('CompraService', () => {
       );
     });
 
-    it('producto inexistente → 400 (no 404; mismo criterio que ventas)', async () => {
+    it('producto inexistente → 404 limpio', async () => {
       prisma.proveedor.findUnique.mockResolvedValue(proveedorRow());
       prisma.producto.findUnique.mockResolvedValue(null);
 
@@ -147,7 +147,7 @@ describe('CompraService', () => {
           proveedor_id: 'prov-1',
           items: [{ producto_id: 'prod-x', cantidad: 1, precio_unitario: 10 }],
         }),
-      ).rejects.toThrow(new BadRequestException('producto prod-x: producto no encontrado'));
+      ).rejects.toThrow(new NotFoundException('producto no encontrado'));
     });
 
     it('cantidad <= 0 → 400 con el mensaje envuelto', async () => {

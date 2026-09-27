@@ -40,7 +40,8 @@ export class CompraService {
         where: { id: item.producto_id },
       });
       if (!producto) {
-        throw new BadRequestException(`producto ${item.producto_id}: producto no encontrado`);
+        // 404 limpio (diseño nuevo; ventas hereda el 400 envuelto del Go).
+        throw new NotFoundException('producto no encontrado');
       }
     }
 
