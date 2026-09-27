@@ -7,31 +7,16 @@ services:
       POSTGRES_USER: ${DB_USER:-comercios}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-comercios}
       POSTGRES_DB: ${DB_NAME:-comercios}
+    # 5433 en el host: el 5432 suele estar ocupado por otro postgres local.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - comercios_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-comercios} -d ${DB_NAME:-comercios}"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  migrate:
-    image: migrate/migrate:v4.17.1
-    container_name: comercios-migrate
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./migrations:/migrations
-    entrypoint:
-      [
-        "migrate",
-        "-path", "/migrations",
-        "-database", "postgres://${DB_USER:-comercios}:${DB_PASSWORD:-comercios}@db:5432/${DB_NAME:-comercios}?sslmode=disable",
-        "up",
-      ]
 
   api:
     build: .
@@ -40,18 +25,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     environment:
-      PORT: 8080
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: ${DB_USER:-comercios}
-      DB_PASSWORD: ${DB_PASSWORD:-comercios}
-      DB_NAME: ${DB_NAME:-comercios}
+      PORT: 8081
+      DATABASE_URL: postgresql://${DB_USER:-comercios}:${DB_PASSWORD:-comercios}@db:5432/${DB_NAME:-comercios}?schema=public
       JWT_SECRET: ${JWT_SECRET:-cambiar-en-produccion}
     ports:
-      - "8080:8080"
+      - "8081:8081"
 
 volumes:
-  db_data:
+  comercios_data:
