@@ -1,0 +1,195 @@
+// Schema Prisma del backend saas-comercios.
+// Escrito a mano, fiel a las migraciones SQL originales del backend Go
+// (migrations/000001..000008). Los CHECK constraints de la DB se mantienen
+// como campos String validados en DTOs/services (no se usan enums de PG).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id           String   @id @default(uuid()) @db.Uuid
+  nombre       String   @db.VarChar(150)
+  email        String   @unique @db.VarChar(150)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  rol          String   @default("empleado") @db.VarChar(30)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  ventas           Venta[]
+  compras          Compra[]
+  movimientosStock MovimientoStock[]
+  cajas            Caja[]
+
+  @@map("usuarios")
+}
+
+model Producto {
+  id           String   @id @default(uuid()) @db.Uuid
+  sku          String   @unique @db.VarChar(50)
+  codigoBarras String?  @map("codigo_barras") @db.VarChar(50)
+  nombre       String   @db.VarChar(200)
+  categoria    String?  @db.VarChar(100)
+  precioCosto  Decimal  @default(0) @map("precio_costo") @db.Decimal(12, 2)
+  precioVenta  Decimal  @default(0) @map("precio_venta") @db.Decimal(12, 2)
+  stockActual  Int      @default(0) @map("stock_actual")
+  stockMinimo  Int      @default(0) @map("stock_minimo")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  ventaItems       VentaItem[]
+  compraItems      CompraItem[]
+  movimientosStock MovimientoStock[]
+
+  @@map("productos")
+}
+
+model Cliente {
+  id                   String   @id @default(uuid()) @db.Uuid
+  nombre               String   @db.VarChar(200)
+  cuit                 String?  @db.VarChar(20)
+  telefono             String?  @db.VarChar(30)
+  email                String?  @db.VarChar(150)
+  saldoCuentaCorriente Decimal  @default(0) @map("saldo_cuenta_corriente") @db.Decimal(12, 2)
+  activo               Boolean  @default(true)
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  ventas Venta[]
+
+  @@map("clientes")
+}
+
+model Proveedor {
+  id        String   @id @default(uuid()) @db.Uuid
+  nombre    String   @db.VarChar(200)
+  cuit      String?  @db.VarChar(20)
+  telefono  String?  @db.VarChar(30)
+  email     String?  @db.VarChar(150)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  compras Compra[]
+
+  @@map("proveedores")
+}
+
+model Venta {
+  id        String   @id @default(uuid()) @db.Uuid
+  clienteId String?  @map("cliente_id") @db.Uuid
+  usuarioId String   @map("usuario_id") @db.Uuid
+  fecha     DateTime @default(now()) @db.Timestamptz(6)
+  total     Decimal  @default(0) @db.Decimal(12, 2)
+  estado    String   @default("confirmada") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  cliente Cliente?  @relation(fields: [clienteId], references: [id])
+  usuario Usuario   @relation(fields: [usuarioId], references: [id])
+  items   VentaItem[]
+
+  @@index([clienteId], map: "idx_ventas_cliente")
+  @@index([fecha], map: "idx_ventas_fecha")
+  @@map("ventas")
+}
+
+model VentaItem {
+  id            String  @id @default(uuid()) @db.Uuid
+  ventaId       String  @map("venta_id") @db.Uuid
+  productoId    String  @map("producto_id") @db.Uuid
+  cantidad      Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(12, 2)
+
+  venta   Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@index([ventaId], map: "idx_venta_items_venta")
+  @@index([productoId], map: "idx_venta_items_producto")
+  @@map("venta_items")
+}
+
+model Compra {
+  id          String   @id @default(uuid()) @db.Uuid
+  proveedorId String   @map("proveedor_id") @db.Uuid
+  usuarioId   String   @map("usuario_id") @db.Uuid
+  fecha       DateTime @default(now()) @db.Timestamptz(6)
+  total       Decimal  @default(0) @db.Decimal(12, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  proveedor Proveedor   @relation(fields: [proveedorId], references: [id])
+  usuario   Usuario     @relation(fields: [usuarioId], references: [id])
+  items     CompraItem[]
+
+  @@index([proveedorId], map: "idx_compras_proveedor")
+  @@map("compras")
+}
+
+model CompraItem {
+  id            String  @id @default(uuid()) @db.Uuid
+  compraId      String  @map("compra_id") @db.Uuid
+  productoId    String  @map("producto_id") @db.Uuid
+  cantidad      Int
+  precioUnitario Decimal @map("precio_unitario") @db.Decimal(12, 2)
+
+  compra  Compra    @relation(fields: [compraId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@index([compraId], map: "idx_compra_items_compra")
+  @@index([productoId], map: "idx_compra_items_producto")
+  @@map("compra_items")
+}
+
+model MovimientoStock {
+  id          String   @id @default(uuid()) @db.Uuid
+  productoId  String   @map("producto_id") @db.Uuid
+  usuarioId   String   @map("usuario_id") @db.Uuid
+  cantidad    Int
+  tipo        String   @db.VarChar(20)
+  motivo      String?  @db.VarChar(255)
+  referenciaId String? @map("referencia_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  producto Producto @relation(fields: [productoId], references: [id])
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id])
+
+  @@index([productoId], map: "idx_mov_stock_producto")
+  @@index([createdAt], map: "idx_mov_stock_fecha")
+  @@map("movimientos_stock")
+}
+
+model Caja {
+  id            String    @id @default(uuid()) @db.Uuid
+  usuarioId     String    @map("usuario_id") @db.Uuid
+  fechaApertura DateTime  @default(now()) @map("fecha_apertura") @db.Timestamptz(6)
+  fechaCierre   DateTime? @map("fecha_cierre") @db.Timestamptz(6)
+  saldoInicial  Decimal   @default(0) @map("saldo_inicial") @db.Decimal(12, 2)
+  saldoFinal    Decimal?  @map("saldo_final") @db.Decimal(12, 2)
+  estado        String    @default("abierta") @db.VarChar(20)
+
+  usuario    Usuario         @relation(fields: [usuarioId], references: [id])
+  movimientos MovimientoCaja[]
+
+  @@index([estado], map: "idx_cajas_estado")
+  @@map("cajas")
+}
+
+model MovimientoCaja {
+  id          String   @id @default(uuid()) @db.Uuid
+  cajaId      String   @map("caja_id") @db.Uuid
+  monto       Decimal  @db.Decimal(12, 2)
+  tipo        String   @db.VarChar(20)
+  descripcion String?  @db.VarChar(255)
+  referenciaId String? @map("referencia_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  caja Caja @relation(fields: [cajaId], references: [id], onDelete: Cascade)
+
+  @@index([cajaId], map: "idx_mov_caja_caja")
+  @@map("movimientos_caja")
+}
