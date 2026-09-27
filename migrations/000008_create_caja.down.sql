@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS movimientos_caja;
-DROP TABLE IF EXISTS cajas;
