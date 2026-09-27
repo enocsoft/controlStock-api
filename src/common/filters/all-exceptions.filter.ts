@@ -21,12 +21,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const body = exception.getResponse();
-      const message =
-        typeof body === 'string'
-          ? body
-          : typeof body === 'object' && body !== null && 'message' in body
-            ? String((body as { message: string }).message)
-            : 'error interno';
+      let message = 'error interno';
+      if (typeof body === 'string') {
+        message = body;
+      } else if (typeof body === 'object' && body !== null && 'message' in body) {
+        const raw = (body as { message: string | string[] }).message;
+        // ValidationPipe agrupa los errores; el contrato Go devuelve UN mensaje,
+        // así que tomamos el primero (mismo orden que class-validator).
+        message = Array.isArray(raw) ? raw[0] : String(raw);
+      }
       response.status(status).json({ error: message });
       return;
     }
