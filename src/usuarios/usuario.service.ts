@@ -22,13 +22,14 @@ export class UsuarioService {
     // Paridad de orden con el Go: el 400 por email duplicado tiene
     // prioridad sobre las validaciones de NuevoUsuario.
     await this.verificarEmailDisponible(dto.email, null);
-    this.validarDatos(dto.nombre, dto.email, dto.password, dto.rol, true);
+    const password = dto.password ?? '';
+    this.validarDatos(dto.nombre, dto.email, password, dto.rol, true);
 
     const usuario = await this.prisma.usuario.create({
       data: {
         nombre: dto.nombre,
         email: dto.email,
-        passwordHash: bcrypt.hashSync(dto.password, 10),
+        passwordHash: bcrypt.hashSync(password, 10),
         rol: dto.rol,
         activo: true,
       },
@@ -63,11 +64,12 @@ export class UsuarioService {
       throw new NotFoundException(MSG_NO_ENCONTRADO);
     }
 
+    const password = dto.password ?? '';
     await this.verificarEmailDisponible(dto.email, id);
-    this.validarDatos(dto.nombre, dto.email, dto.password, dto.rol, false);
+    this.validarDatos(dto.nombre, dto.email, password, dto.rol, false);
 
-    const passwordHash =
-      dto.password !== '' ? bcrypt.hashSync(dto.password, 10) : usuario.passwordHash;
+    // password ausente o vacío → conserva el hash existente.
+    const passwordHash = password !== '' ? bcrypt.hashSync(password, 10) : usuario.passwordHash;
 
     const actualizado = await this.prisma.usuario.update({
       where: { id },

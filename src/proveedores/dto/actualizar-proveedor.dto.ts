@@ -1,32 +1,22 @@
 // Full replacement (paridad con actualizarProveedorRequest): los campos
-// omitidos caen al zero value del Go ('' y false).
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+// omitidos caen al zero value del Go ('' y false) gracias a los defaults
+// de clase.
+import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
 export class ActualizarProveedorDto {
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
   @IsNotEmpty({ message: 'el nombre no puede estar vacío' })
-  nombre!: string;
+  nombre = '';
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
-  cuit!: string;
+  cuit = '';
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
-  telefono!: string;
+  telefono = '';
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
-  email!: string;
+  email = '';
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? false)
   @IsBoolean({ message: 'activo debe ser un booleano' })
-  activo!: boolean;
+  activo = false;
 }

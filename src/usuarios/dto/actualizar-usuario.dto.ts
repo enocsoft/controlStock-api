@@ -1,34 +1,29 @@
 // Full replacement (paridad con actualizarUsuarioRequest): los campos
-// omitidos caen al zero value del Go ('', false). El password omitido vale
-// '' y significa "no cambiar la contraseña"; las reglas de dominio
-// (nombre/email obligatorios, rol válido, password >= 8 si no vacía y el
-// 409 por email duplicado) viven en el servicio con los mensajes exactos.
+// omitidos caen al zero value del Go ('', false) gracias a los defaults de
+// clase, y las reglas de dominio (obligatorios, rol) se aplican con los
+// mensajes exactos. El password es OPCIONAL: ausente o vacío conserva el
+// hash; su longitud la valida el service solo cuando viene no vacía.
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class ActualizarUsuarioDto {
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
-  nombre!: string;
+  @IsNotEmpty({ message: 'nombre y email son obligatorios' })
+  nombre = '';
+
+  @IsString()
+  @IsNotEmpty({ message: 'nombre y email son obligatorios' })
+  email = '';
 
   @IsOptional()
   @Transform(({ value }) => value ?? '')
   @IsString()
-  email!: string;
+  password?: string;
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
   @IsString()
-  password!: string;
+  @IsIn(['dueño', 'empleado'], { message: "el rol debe ser 'dueño' o 'empleado'" })
+  rol = '';
 
-  @IsOptional()
-  @Transform(({ value }) => value ?? '')
-  @IsString()
-  rol!: string;
-
-  @IsOptional()
-  @Transform(({ value }) => value ?? false)
   @IsBoolean({ message: 'activo debe ser un booleano' })
-  activo!: boolean;
+  activo = false;
 }

@@ -158,6 +158,31 @@ describe('UsuarioService', () => {
     expect(result.Activo).toBe(true);
   });
 
+  it('actualizar SIN campo password (ausente) conserva el hash y aplica el cambio (regresión del e2e)', async () => {
+    prisma.usuario.findUnique.mockResolvedValue(fila());
+    prisma.usuario.findFirst.mockResolvedValue({ id: 'u1' });
+    prisma.usuario.update.mockResolvedValue(fila({ nombre: 'Renombrado', activo: false }));
+
+    const result = await service.actualizar('u1', {
+      nombre: 'Renombrado',
+      email: 'ana@test.local',
+      rol: 'empleado',
+      activo: false,
+      // sin password: el front omite el campo cuando no cambia contraseña
+    });
+
+    expect(prisma.usuario.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: expect.objectContaining({
+        passwordHash: '$2a$10$hashfalso',
+        nombre: 'Renombrado',
+        activo: false,
+      }),
+    });
+    expect(result.Nombre).toBe('Renombrado');
+    expect(result.Activo).toBe(false);
+  });
+
   it('actualizar con nueva contraseña la re-hashea y 404 si no existe', async () => {
     prisma.usuario.findUnique.mockResolvedValue(fila());
     prisma.usuario.findFirst.mockResolvedValue({ id: 'u1' });
